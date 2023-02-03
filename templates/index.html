@@ -1,0 +1,163 @@
+With code from https://github.com/roniemartinez/real-time-charts-with-fastapi
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Real-Time Chart of Variable Test</title>
+    <!--suppress JSUnresolvedLibraryURL -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.1/css/bootstrap.min.css"
+          integrity="sha512-T584yQ/tdRR5QwOpfvDfVQUidzfgc2339Lc8uBDtcp/wYu80d7jwBgAxbyMh0a9YM9F8N3tdErpFI8iaGx6x5g=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <!-- suppress JSUnresolvedLibraryURL
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.css"
+          integrity="sha512-/zs32ZEJh+/EO2N1b0PEdoA10JkdC3zJ8L5FTiQu82LR9S/rOQNfQN7U59U9BC12swNeRAz3HSzIL2vpp4fv3w=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/> -->
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="card" style="margin-top:2vw;">
+                <div class="card-body">
+                    <canvas id="wind_speed_canvas"></canvas>
+                </div>
+            </div>
+            <div class="card" style="margin-top:2vw;">
+                <div class="card-body">
+                    <canvas id="wind_direction_canvas"></canvas>
+                </div>
+            </div>
+            <div class="card" style="margin-top:2vw;">
+                <div class="card-body">
+                    <canvas id="temperature_canvas"></canvas>
+                </div>
+            </div>
+            <div class="card" style="margin-top:2vw;">
+                <div class="card-body">
+                    <canvas id="humidity_canvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!--suppress JSUnresolvedLibraryURL -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!--suppress JSUnresolvedLibraryURL -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.1/js/bootstrap.bundle.min.js"
+        integrity="sha512-mULnawDVcCnsk9a4aG1QLZZ6rcce/jSzEGqUkeOLy0b6q0+T6syHrxlsAGH7ZVoqC93Pd0lBqd6WguPWih7VHA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!--suppress JSUnresolvedLibraryURL -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.2.0/dist/chart.umd.min.js"></script>
+<script>
+    $(document).ready(function () {
+        const config = {
+            type: 'line',
+            data: {
+                labels: Array(30).fill("0000-00-00 00:00:00"),
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Wind Speed'
+                    },
+                },
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        },  
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Value'
+                        },
+                    }
+                }
+            }
+        };
+
+        function selectColor(number) {
+            const hue = number * 137.508; // use golden angle approximation
+            return `hsl(${hue},50%,75%)`;
+        }
+
+        function updateChart(chart, event_data, event_ids, variable) {
+            // add new id/dataset to chart if needed
+            if (event_ids.length > chart.data.datasets.length) {
+                for (let i = chart.data.datasets.length; i < event_ids.length; i++) {
+                    const dsColor = selectColor(i);// color generator
+                    const newDataset = {
+                        label: event_ids[i],
+                        backgroundColor: dsColor,
+                        borderColor: dsColor,
+                        data: Array(30).fill(null),
+                        fill: false,
+                    };
+                    chart.data.datasets.push(newDataset);
+                }
+                chart.update();
+            }
+
+            for (let i = 0; i < event_ids.length; i++) {
+                if (chart.data.labels.length === 30) {
+                    chart.data.labels.shift();
+                    chart.data.datasets[i].data.shift();
+                }
+                chart.data.labels.push(event_data.time);
+                chart.data.datasets[i].data.push(event_data.value[event_ids[i]][variable]);
+            }
+        }
+
+        const wind_speed_context = document.getElementById('wind_speed_canvas').getContext('2d');
+        const wind_direction_context = document.getElementById('wind_direction_canvas').getContext('2d');
+        const temperature_context = document.getElementById('temperature_canvas').getContext('2d');
+        const humidity_context = document.getElementById('humidity_canvas').getContext('2d');
+
+        const windSpeed = new Chart(wind_speed_context, config);
+
+        const config_direction = Object.assign({}, config);
+        config_direction.options.plugins.title.text = "Wind Direction";
+        const windDirection = new Chart(wind_direction_context, config_direction);
+        
+        const config_temp = Object.assign({}, config);
+        config_temp.options.plugins.title.text = "Temperature";
+        const tempChart = new Chart(temperature_context, config_temp);
+
+        const config_humidity = Object.assign({}, config);
+        config_humidity.options.plugins.title.text = "Humidity";
+        const humidityChart = new Chart(humidity_context, config_humidity);
+
+        const source = new EventSource("/test-data");
+
+        source.onmessage = function (event) {
+            const event_data = JSON.parse(event.data);
+            const event_ids = Object.keys(event_data.value);
+
+            updateChart(windSpeed, event_data, event_ids, 'wind_speed');
+            updateChart(windDirection, event_data, event_ids, 'wind_direction');
+            updateChart(tempChart, event_data, event_ids, 'temp');
+            updateChart(humidityChart, event_data, event_ids, 'humidity');
+
+            // windSpeed.update();
+            // windDirection.update();
+            // tempChart.update();
+            // humidityChart.update();
+        }
+    });
+</script>
+</body>
+</html>
