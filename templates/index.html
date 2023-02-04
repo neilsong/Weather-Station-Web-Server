@@ -109,7 +109,7 @@ With code from https://github.com/roniemartinez/real-time-charts-with-fastapi
                     };
                     chart.data.datasets.push(newDataset);
                 }
-                chart.update();
+                // chart.update();
             }
 
             for (let i = 0; i < event_ids.length; i++) {
@@ -120,6 +120,8 @@ With code from https://github.com/roniemartinez/real-time-charts-with-fastapi
                 chart.data.labels.push(event_data.time);
                 chart.data.datasets[i].data.push(event_data.value[event_ids[i]][variable]);
             }
+            // chart.update();
+            return chart;
         }
 
         const wind_speed_context = document.getElementById('wind_speed_canvas').getContext('2d');
@@ -127,19 +129,121 @@ With code from https://github.com/roniemartinez/real-time-charts-with-fastapi
         const temperature_context = document.getElementById('temperature_canvas').getContext('2d');
         const humidity_context = document.getElementById('humidity_canvas').getContext('2d');
 
-        const windSpeed = new Chart(wind_speed_context, config);
+        var windSpeed = new Chart(wind_speed_context, config);
 
-        const config_direction = Object.assign({}, config);
-        config_direction.options.plugins.title.text = "Wind Direction";
-        const windDirection = new Chart(wind_direction_context, config_direction);
+        const config_direction = {
+            type: 'line',
+            data: {
+                labels: Array(30).fill("0000-00-00 00:00:00"),
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Wind Direction'
+                    },
+                },
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        },  
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Value'
+                        },
+                    }
+                }
+            }
+        };
+        var windDirection = new Chart(wind_direction_context, config_direction);
         
-        const config_temp = Object.assign({}, config);
-        config_temp.options.plugins.title.text = "Temperature";
-        const tempChart = new Chart(temperature_context, config_temp);
+        const config_temp = {
+            type: 'line',
+            data: {
+                labels: Array(30).fill("0000-00-00 00:00:00"),
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Temperature'
+                    },
+                },
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        },  
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Value'
+                        },
+                    }
+                }
+            }
+        };
+        var tempChart = new Chart(temperature_context, config_temp);
 
-        const config_humidity = Object.assign({}, config);
-        config_humidity.options.plugins.title.text = "Humidity";
-        const humidityChart = new Chart(humidity_context, config_humidity);
+        const config_humidity = {
+            type: 'line',
+            data: {
+                labels: Array(30).fill("0000-00-00 00:00:00"),
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Humidity'
+                    },
+                },
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        },  
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Value'
+                        },
+                    }
+                }
+            }
+        };
+        var humidityChart = new Chart(humidity_context, config_humidity);
 
         const source = new EventSource("/test-data");
 
@@ -147,15 +251,15 @@ With code from https://github.com/roniemartinez/real-time-charts-with-fastapi
             const event_data = JSON.parse(event.data);
             const event_ids = Object.keys(event_data.value);
 
-            updateChart(windSpeed, event_data, event_ids, 'wind_speed');
-            updateChart(windDirection, event_data, event_ids, 'wind_direction');
-            updateChart(tempChart, event_data, event_ids, 'temp');
-            updateChart(humidityChart, event_data, event_ids, 'humidity');
+            windSpeed = updateChart(windSpeed, event_data, event_ids, 'wind_speed');
+            windDirection = updateChart(windDirection, event_data, event_ids, 'wind_direction');
+            tempChart = updateChart(tempChart, event_data, event_ids, 'temp');
+            humidityChart = updateChart(humidityChart, event_data, event_ids, 'humidity');
 
-            // windSpeed.update();
-            // windDirection.update();
-            // tempChart.update();
-            // humidityChart.update();
+            windSpeed.update();
+            windDirection.update();
+            tempChart.update();
+            humidityChart.update();
         }
     });
 </script>

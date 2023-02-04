@@ -75,7 +75,6 @@ async def update(wind_speed: float, wind_direction: float, temp:float, humidity:
     return "done updating"
 
 import nest_asyncio
-from pyngrok import ngrok
 import uvicorn
 nest_asyncio.apply()
 uvicorn.run(app, port=8000)
