@@ -77,4 +77,10 @@ async def update(wind_speed: float, wind_direction: float, temp:float, humidity:
 import nest_asyncio
 import uvicorn
 nest_asyncio.apply()
+
+from pyngrok import ngrok, conf
+pyngrok_config = conf.PyngrokConfig()
+pyngrok_config.auth_token = "1rKW512YaaAic3Lmwx2ZKtyfs1i_79mpcmRvUwQEVb4GTAeCP"
+ngrok.connect(8000, subdomain="weatherstation", pyngrok_config=pyngrok_config)
+
 uvicorn.run(app, port=8000)

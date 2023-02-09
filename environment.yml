@@ -10,3 +10,4 @@ dependencies:
     - fastapi==0.86.0
     - nest_asyncio
     - jinja2
+    - pyngrok
